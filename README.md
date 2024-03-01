@@ -1,3 +1,3 @@
-# PSoC Project Template
+# Hand Board
 
 Adapt this project to make board firmware!
