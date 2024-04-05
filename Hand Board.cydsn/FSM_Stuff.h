@@ -16,10 +16,12 @@
 //States in FSM
 #define UNINIT          0x0
 #define CHECK_CAN       0x1
-#define DO_MODE1        0x2
+#define DO_LASER_MODE   0x2
+#define DO_LINEAR_MODE  0x3
 
 //Operation modes
-#define MODE1           0x2
+#define LASER_MODE      0x4
+#define LINEAR_MODE     0x5
 
 // FSM Errors (0x20-0x2F)
 #define ERROR_ESTOP         0x20
