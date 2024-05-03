@@ -283,44 +283,5 @@ CY_ISR(ISR_CAN)
 }
 
 
-static uint32 ReadSwSwitch(void)
-{
-    uint32 heldDown;
-    uint32 sw1Status;
-    uint32 sw2Status;
 
-    sw1Status = 0u;  /* Switch is not active */
-    sw2Status = 0u;  /* Switch is not active */
-    heldDown = 0u;  /* Reset debounce counter */
-
-    /* Wait for debounce period before determining whether the switch is pressed */
-    while (Switch1_Read() == SWITCH_PRESSED)
-    {
-        /* Count debounce period */
-        CyDelay(SWITCH_DEBOUNCE_UNIT);
-        ++heldDown;
-
-        if (heldDown > SWITCH_DEBOUNCE_PERIOD)
-        {
-            sw1Status = 1u; /* Switch is pressed */
-            break;
-        }
-    }
-    
-    while (Switch2_Read() == SWITCH_PRESSED)
-    {
-        /* Count debounce period */
-        CyDelay(SWITCH_DEBOUNCE_UNIT);
-        ++heldDown;
-
-        if (heldDown > SWITCH_DEBOUNCE_PERIOD)
-        {
-            sw2Status = 1u; /* Switch is pressed */
-            break;
-        }
-    }
-
-    return (sw1Status);
-    return (sw2Status);
-}
 /* [] END OF FILE */
