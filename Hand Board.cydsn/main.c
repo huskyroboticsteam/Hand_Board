@@ -28,9 +28,11 @@ volatile uint8_t ERROR_time_LED = 0;
 char txData[TX_DATA_SIZE];
 
 // CAN stuff
-CANPacket can_recieve;
+CANPacket can_receive;
 CANPacket can_send;
 uint8 address = 0;
+
+const uint8_t* data;
 
 CY_ISR(Period_Reset_Handler) {
     CAN_time_LED++;
@@ -48,6 +50,10 @@ CY_ISR(Button_1_Handler) {
     LED_DBG_Write(!LED_DBG_Read());
 }
 
+int32_t pwm_set = 0;
+int32_t on_time = 0;
+int32_t off_time = 0;
+
 int main(void)
 { 
     Initialize();
@@ -55,32 +61,38 @@ int main(void)
     
     for(;;)
     {
+        PWM_Laser_WriteCompare(10000);
+        
         err = 0;
         switch(GetState()) {
             case(UNINIT):
                 SetStateTo(CHECK_CAN);
                 break;
             case(CHECK_CAN):
-                if (!PollAndReceiveCANPacket(&can_recieve)) {
+                if (!PollAndReceiveCANPacket(&can_receive)) {
                     LED_CAN_Write(ON);
                     CAN_time_LED = 0;
-                    err = ProcessCAN(&can_recieve, &can_send);
+                    err = ProcessCAN(&can_receive, &can_send);
                 }
-                if (GetMode() == MODE1)
-                    SetStateTo(DO_MODE1);
+                if (GetModeFromPacket(&can_receive) == PWM_MODE)
+                    SetStateTo(DO_PWM_MODE);
                 else 
                     SetStateTo(CHECK_CAN);
                 break;
-            case(DO_MODE1):
-                // mode 1 tasks
+            case(DO_PWM_MODE): // JUST NEED PWM MODE, HOW TO TELL LASER FROM LINEAR?
+                // mode 1 tasks       
+                on_time = GetPWMFromPacket(&can_receive);
+                PWM_Laser_WriteCompare(on_time);
+                DBG_UART_UartPutString("PWM Set");
+                
                 SetStateTo(CHECK_CAN);
                 break;
             default:
                 err = ERROR_INVALID_STATE;
                 SetStateTo(UNINIT);
                 break;
-        }
-        
+        }    
+    
         if (err) DisplayErrorCode(err);
         
         if (DBG_UART_SpiUartGetRxBufferSize()) {
@@ -104,8 +116,10 @@ void Initialize(void) {
     
     InitCAN(0x4, (int)address);
     Timer_Period_Reset_Start();
+    
+    PWM_Laser_Start();
+    PWM_Linear_Start();
 
-    isr_Button_1_StartEx(Button_1_Handler);
     isr_Period_Reset_StartEx(Period_Reset_Handler);
 }
 

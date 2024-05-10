@@ -24,17 +24,17 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
     uint16_t packageID = GetPacketID(receivedPacket);
     uint8_t sender_DG = GetSenderDeviceGroupCode(receivedPacket);
     uint8_t sender_SN = GetSenderDeviceSerialNumber(receivedPacket);
-    int32_t data = 0;
+    int32_t data = 0xFF;
     int err = 0;
+    
     
     switch(packageID){
         // Board-specific packets
         case(ID_MOTOR_UNIT_MODE_SEL):
             data = GetModeFromPacket(receivedPacket);
             
-            if(data == MODE1) {
-                SetModeTo(MODE1);
-                // initialize MODE1
+            if(data == PWM_MODE) {
+                SetModeTo(DO_PWM_MODE);
             } else {
                 err = ERROR_INVALID_MODE;
             }
