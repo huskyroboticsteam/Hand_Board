@@ -24,7 +24,7 @@
 volatile uint8_t CAN_time_LED = 0;
 volatile uint8_t ERROR_time_LED = 0;
 
-#define SWITCH_DEBOUNCE_UNIT    (lu)
+#define SWITCH_DEBOUNCE_UNIT   (1u)
 
 #define SWITCH_DEBOUNCE_PERIOD (10u)
 
@@ -142,21 +142,22 @@ int main(void)
         
         
         /* Place your application code here. */
+        /*
         if (ADC_IsEndConversion(ADC_RETURN_STATUS))
         {
-            /* Gets ADC conversion result */
+            /* Gets ADC conversion result /
             output = ADC_GetResult16(ADC_CHANNEL_NUMBER_0);
 
-            /* Saturates ADC result to positive numbers */
+            /* Saturates ADC result to positive numbers /
             if (output < 0)
             {
                 output = 0;
             }
             
-            /* Converts ADC result to milli volts */
+            /* Converts ADC result to milli volts /
             resMilliVolts = (uint16) ADC_CountsTo_mVolts(ADC_CHANNEL_NUMBER_0, output);
             
-            /* Sends value of ADC output via CAN */
+            /* Sends value of ADC output via CAN /
             CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_ADCdata, HI8(resMilliVolts));
             CAN_TX_DATA_BYTE2(CAN_TX_MAILBOX_ADCdata, LO8(resMilliVolts));
             CAN_TX_DATA_BYTE3(CAN_TX_MAILBOX_ADCdata, 0u);
@@ -167,18 +168,19 @@ int main(void)
             CAN_TX_DATA_BYTE8(CAN_TX_MAILBOX_ADCdata, 0u);
             CAN_SendMsgADCdata();
 
-            /* Display value of ADC output on LCD */
+            /* Display value of ADC output on LCD /
             sprintf(txData, "ADC out: %u.%.3u \r\n", (resMilliVolts / 1000u), (resMilliVolts % 1000u));
             UART_UartPutString(txData);
         }
 
-        /* Change configuration at switch press or release event */
-        if (switchState != ReadSwSwitch())    /* Switch state changed status */
+        /*
+        /* Change configuration at switch press or release event /
+        if (switchState != ReadSwSwitch())    /* Switch state changed status /
         {
-            /* Store the current switch state */
+            /* Store the current switch state /
             switchState = ReadSwSwitch();
 
-            /* Fill CAN data depending on switch state */
+            /* Fill CAN data depending on switch state /
             if (Switch1_Read() == 0u)
             {
                 CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_switchStatus, SWITCH_PRESSED);
@@ -197,22 +199,23 @@ int main(void)
             CAN_TX_DATA_BYTE7(CAN_TX_MAILBOX_switchStatus, 0u);
             CAN_TX_DATA_BYTE8(CAN_TX_MAILBOX_switchStatus, 0u);
 
-            /* Send CAN message with switch state */
+            /* Send CAN message with switch state /
             CAN_SendMsgswitchStatus();
         }
-
+        
         if (isrFlag != 0u)
         {
-            /* Set PWM pulse width */
+            /* Set PWM pulse width /
             PWM_WriteCompare(CAN_RX_DATA_BYTE1(CAN_RX_MAILBOX_0));
 
-            /* Puts out over UART value of PWM pulse width */
+            /* Puts out over UART value of PWM pulse width /
             sprintf(txData, "PWM pulse width: %X \r\n", CAN_RX_DATA_BYTE1(CAN_RX_MAILBOX_0));
             UART_UartPutString(txData);
             
-            /* Clear the isrFlag */
+            /* Clear the isrFlag /
             isrFlag = 0u;
         }
+            */
 
         CyDelay(100u);
     }
@@ -233,7 +236,6 @@ void Initialize(void) {
     Timer_Period_Reset_Start();
     
     PWM_Laser_Start();
-    PWM_Linear_Start();
 
     isr_Period_Reset_StartEx(Period_Reset_Handler);
 }
