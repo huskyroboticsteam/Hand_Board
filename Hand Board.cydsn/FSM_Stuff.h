@@ -17,9 +17,7 @@
 #define UNINIT          0x0
 #define CHECK_CAN       0x1
 #define DO_PWM_MODE     0x2
-
-//Operation modes
-#define PWM_MODE 0x00
+#define DO_LINEAR_MODE  0x3
 
 // FSM Errors (0x20-0x2F)
 #define ERROR_ESTOP         0x20

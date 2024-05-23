@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "project.h"
 #include "main.h"
 #include "cyapicallbacks.h"
 #include "CAN_Stuff.h"
@@ -31,7 +32,7 @@ volatile uint8_t ERROR_time_LED = 0;
 #define SWITCH_RELEASED        (0u)
 #define SWITCH_PRESSED         (1u)
 
-#define TX_DATA_SIZE           (25u)
+// #define TX_DATA_SIZE           (25u)
 #define ADC_CHANNEL_NUMBER_0   (0u)
 
 
@@ -70,24 +71,22 @@ CY_ISR(Button_1_Handler) {
 }
 
 int32_t pwm_set = 0;
-int32_t on_time = 0;
-int32_t off_time = 0;
 
 int main(void)
 { 
     Initialize();
     int err;
     
-     int16 output;
+    int16 output;
     uint16 resMilliVolts;
     char8 txData[TX_DATA_SIZE];
 
-    UART_Start();
-    ADC_Start();
-    PWM_Start();
+    DBG_UART_Start();
+    ADC_Pot_Start();
+    PWM_Motor_Start();
 
     /* Start ADC conversion */
-    ADC_StartConvert();
+    ADC_Pot_StartConvert();
 
     CAN_Start();
 
@@ -100,7 +99,6 @@ int main(void)
     
     for(;;)
     {
-        PWM_Laser_WriteCompare(10000);
         
         err = 0;
         switch(GetState()) {
@@ -113,15 +111,26 @@ int main(void)
                     CAN_time_LED = 0;
                     err = ProcessCAN(&can_receive, &can_send);
                 }
-                if (GetModeFromPacket(&can_receive) == PWM_MODE)
+                if (GetModeFromPacket(&can_receive) == MOTOR_UNIT_MODE_PWM)
                     SetStateTo(DO_PWM_MODE);
+                else if (GetModeFromPacket(&can_receive) == MOTOR_UNIT_MODE_LINEAR)
+                    SetStateTo(DO_LINEAR_MODE);
                 else 
                     SetStateTo(CHECK_CAN);
                 break;
-            case(DO_PWM_MODE): // JUST NEED PWM MODE, HOW TO TELL LASER FROM LINEAR?
-                // mode 1 tasks       
-                on_time = GetPWMFromPacket(&can_receive);
-                PWM_Laser_WriteCompare(on_time);
+            case(DO_PWM_MODE):
+                // mode 1 tasks
+                pwm_set = GetPWMFromPacket(&can_receive);
+                switch (GetLaserIDFromPacket(&can_receive)) {
+                    case 0:
+                        PWM_Laser_A_WriteCompare(pwm_set);
+                        break;
+                    case 1:
+                        PWM_Laser_B_WriteCompare(pwm_set);
+                        break;
+                    
+                }
+                
                 DBG_UART_UartPutString("PWM Set");
                 
                 SetStateTo(CHECK_CAN);
@@ -142,22 +151,25 @@ int main(void)
         
         
         /* Place your application code here. */
-        /*
-        if (ADC_IsEndConversion(ADC_RETURN_STATUS))
+        if (ADC_Pot_IsEndConversion(ADC_Pot_RETURN_STATUS))
         {
-            /* Gets ADC conversion result /
-            output = ADC_GetResult16(ADC_CHANNEL_NUMBER_0);
+            /* Gets ADC conversion result */
+            output = ADC_Pot_GetResult16(ADC_CHANNEL_NUMBER_0);
 
-            /* Saturates ADC result to positive numbers /
+            /* Saturates ADC result to positive numbers */
             if (output < 0)
             {
                 output = 0;
             }
             
-            /* Converts ADC result to milli volts /
-            resMilliVolts = (uint16) ADC_CountsTo_mVolts(ADC_CHANNEL_NUMBER_0, output);
+            /* Converts ADC result to milli volts */
+            resMilliVolts = (uint16) ADC_Pot_CountsTo_mVolts(ADC_CHANNEL_NUMBER_0, output);
             
-            /* Sends value of ADC output via CAN /
+            /*
+            Unclear what commented code is for.
+            */  
+            /*
+            // Sends value of ADC output via CAN
             CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_ADCdata, HI8(resMilliVolts));
             CAN_TX_DATA_BYTE2(CAN_TX_MAILBOX_ADCdata, LO8(resMilliVolts));
             CAN_TX_DATA_BYTE3(CAN_TX_MAILBOX_ADCdata, 0u);
@@ -168,28 +180,32 @@ int main(void)
             CAN_TX_DATA_BYTE8(CAN_TX_MAILBOX_ADCdata, 0u);
             CAN_SendMsgADCdata();
 
-            /* Display value of ADC output on LCD /
+            // Display value of ADC output on LCD
             sprintf(txData, "ADC out: %u.%.3u \r\n", (resMilliVolts / 1000u), (resMilliVolts % 1000u));
-            UART_UartPutString(txData);
+            DBG_UART_UartPutString(txData);
+            */
         }
 
         /*
-        /* Change configuration at switch press or release event /
-        if (switchState != ReadSwSwitch())    /* Switch state changed status /
+            Unclear what commented code is for.
+        */
+        /*
+        // Change configuration at switch press or release event 
+        if (switchState != ReadSwSwitch())    // Switch state changed status
         {
-            /* Store the current switch state /
+            // Store the current switch state
             switchState = ReadSwSwitch();
 
-            /* Fill CAN data depending on switch state /
+            // Fill CAN data depending on switch state
             if (Switch1_Read() == 0u)
             {
                 CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_switchStatus, SWITCH_PRESSED);
-                UART_UartPutString("switch1 pressed.\r\n");
+                DBG_UART_UartPutString("switch1 pressed.\r\n");
             }
             else
             {
                 CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_switchStatus, SWITCH_RELEASED);
-                UART_UartPutString("switch1 released.\r\n");
+                DBG_UART_UartPutString("switch1 released.\r\n");
             }
             CAN_TX_DATA_BYTE2(CAN_TX_MAILBOX_switchStatus, 0u);
             CAN_TX_DATA_BYTE3(CAN_TX_MAILBOX_switchStatus, 0u);
@@ -199,23 +215,23 @@ int main(void)
             CAN_TX_DATA_BYTE7(CAN_TX_MAILBOX_switchStatus, 0u);
             CAN_TX_DATA_BYTE8(CAN_TX_MAILBOX_switchStatus, 0u);
 
-            /* Send CAN message with switch state /
+            // Send CAN message with switch state
             CAN_SendMsgswitchStatus();
         }
         
         if (isrFlag != 0u)
         {
-            /* Set PWM pulse width /
+            // Set PWM pulse width
             PWM_WriteCompare(CAN_RX_DATA_BYTE1(CAN_RX_MAILBOX_0));
 
-            /* Puts out over UART value of PWM pulse width /
+            // Puts out over UART value of PWM pulse width
             sprintf(txData, "PWM pulse width: %X \r\n", CAN_RX_DATA_BYTE1(CAN_RX_MAILBOX_0));
-            UART_UartPutString(txData);
+            DBG_UART_UartPutString(txData);
             
-            /* Clear the isrFlag /
+            // Clear the isrFlag
             isrFlag = 0u;
         }
-            */
+        */
 
         CyDelay(100u);
     }
@@ -235,8 +251,9 @@ void Initialize(void) {
     InitCAN(0x4, (int)address);
     Timer_Period_Reset_Start();
     
-    PWM_Laser_Start();
-
+    PWM_Laser_A_Start();
+    PWM_Laser_B_Start();
+    
     isr_Period_Reset_StartEx(Period_Reset_Handler);
 }
 

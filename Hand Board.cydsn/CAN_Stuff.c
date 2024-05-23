@@ -33,7 +33,7 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
         case(ID_MOTOR_UNIT_MODE_SEL):
             data = GetModeFromPacket(receivedPacket);
             
-            if(data == PWM_MODE) {
+            if(data == MOTOR_UNIT_MODE_PWM) {
                 SetModeTo(DO_PWM_MODE);
             } else {
                 err = ERROR_INVALID_MODE;
