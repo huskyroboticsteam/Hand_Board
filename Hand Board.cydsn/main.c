@@ -111,14 +111,12 @@ int main(void)
                     CAN_time_LED = 0;
                     err = ProcessCAN(&can_receive, &can_send);
                 }
-                if (GetModeFromPacket(&can_receive) == MOTOR_UNIT_MODE_PWM)
-                    SetStateTo(DO_PWM_MODE);
-                else if (GetModeFromPacket(&can_receive) == MOTOR_UNIT_MODE_LINEAR)
-                    SetStateTo(DO_LINEAR_MODE);
-                else 
-                    SetStateTo(CHECK_CAN);
                 break;
-            case(DO_PWM_MODE):
+            case DO_PWM_MODE:
+                pwm_set = GetPWMFromPacket(&can_receive);
+                PWM_Motor_WriteCompare(pwm_set);
+                break;
+            case DO_LASER_MODE:
                 // mode 1 tasks
                 pwm_set = GetPWMFromPacket(&can_receive);
                 switch (GetLaserIDFromPacket(&can_receive)) {
@@ -127,8 +125,7 @@ int main(void)
                         break;
                     case 1:
                         PWM_Laser_B_WriteCompare(pwm_set);
-                        break;
-                    
+                        break;    
                 }
                 
                 DBG_UART_UartPutString("PWM Set");
@@ -253,6 +250,7 @@ void Initialize(void) {
     
     PWM_Laser_A_Start();
     PWM_Laser_B_Start();
+    PWM_Motor_Start();
     
     isr_Period_Reset_StartEx(Period_Reset_Handler);
 }

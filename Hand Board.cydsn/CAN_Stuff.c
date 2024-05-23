@@ -24,19 +24,31 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
     uint16_t packageID = GetPacketID(receivedPacket);
     uint8_t sender_DG = GetSenderDeviceGroupCode(receivedPacket);
     uint8_t sender_SN = GetSenderDeviceSerialNumber(receivedPacket);
-    int32_t data = 0xFF;
+    int32_t mode = 0xFF;
     int err = 0;
     
     
     switch(packageID){
         // Board-specific packets
         case(ID_MOTOR_UNIT_MODE_SEL):
-            data = GetModeFromPacket(receivedPacket);
+            mode = GetModeFromPacket(receivedPacket);
             
-            if(data == MOTOR_UNIT_MODE_PWM) {
-                SetModeTo(DO_PWM_MODE);
-            } else {
-                err = ERROR_INVALID_MODE;
+            switch (mode) {
+                case MOTOR_UNIT_MODE_PWM:
+                    SetModeTo(MOTOR_UNIT_MODE_PWM);
+                    SetStateTo(DO_PWM_MODE);
+                    break;
+                case MOTOR_UNIT_MODE_LINEAR:
+                    SetModeTo(MOTOR_UNIT_MODE_LINEAR);
+                    SetStateTo(DO_LINEAR_MODE);
+                    break;
+                case MOTOR_UNIT_MODE_LASER:
+                    SetModeTo(MOTOR_UNIT_MODE_LASER);
+                    SetStateTo(DO_LASER_MODE);
+                    break;
+                default:
+                    SetModeTo(0xFF);
+                    err = ERROR_INVALID_MODE;
             }
             break;
             
