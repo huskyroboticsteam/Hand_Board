@@ -83,7 +83,6 @@ int main(void)
 
     DBG_UART_Start();
     ADC_Pot_Start();
-    PWM_Motor_Start();
 
     /* Start ADC conversion */
     ADC_Pot_StartConvert();
@@ -116,7 +115,7 @@ int main(void)
                 pwm_set = GetPWMFromPacket(&can_receive);
                 PWM_Motor_WriteCompare(pwm_set);
                 break;
-            case DO_LASER_MODE:
+            case DO_SECONDARY_MODE:
                 // mode 1 tasks
                 pwm_set = GetPWMFromPacket(&can_receive);
                 switch (GetLaserIDFromPacket(&can_receive)) {
@@ -248,8 +247,8 @@ void Initialize(void) {
     InitCAN(0x4, (int)address);
     Timer_Period_Reset_Start();
     
-    PWM_Laser_A_Start();
-    PWM_Laser_B_Start();
+    PWM_Laser_Start();
+    PWM_Actuator_Start();
     PWM_Motor_Start();
     
     isr_Period_Reset_StartEx(Period_Reset_Handler);
