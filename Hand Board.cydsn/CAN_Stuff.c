@@ -36,15 +36,29 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
             switch (data) {
                 case MOTOR_UNIT_MODE_PWM:
                     SetModeTo(MOTOR_UNIT_MODE_PWM);
-                    SetStateTo(DO_PWM_MODE);
                     break;
                 case MOTOR_UNIT_MODE_SECONDARY:
                     SetModeTo(MOTOR_UNIT_MODE_SECONDARY);
-                    SetStateTo(DO_SECONDARY_MODE);
                     break;
                 default:
                     SetModeTo(0xFF);
                     err = ERROR_INVALID_MODE;
+            }
+            break;
+            
+        case(ID_MOTOR_UNIT_PCA_PWM):
+            if (GetMode() == MOTOR_UNIT_MODE_SECONDARY) {
+                SetStateTo(DO_SECONDARY_MODE);
+            } else {
+                err = ERROR_INVALID_MODE;   
+            }
+            break;
+            
+        case(ID_MOTOR_UNIT_PWM_DIR_SET):
+            if (GetMode() == MOTOR_UNIT_MODE_PWM) {
+                SetStateTo(DO_PWM_MODE);
+            } else {
+                err = ERROR_INVALID_MODE;   
             }
             break;
             
