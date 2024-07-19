@@ -31,6 +31,7 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
     switch(packageID){
         // Board-specific packets
         case(ID_MOTOR_UNIT_MODE_SEL):
+            Print("Package ID: ID_MOTOR_UNIT_MODE_SEL\r\n");
             data = GetModeFromPacket(receivedPacket);
             
             switch (data) {
@@ -47,7 +48,9 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
             break;
             
         case(ID_MOTOR_UNIT_PCA_PWM):
+            Print("Package ID: ID_MOTOR_UNIT_PCA_PWM\r\n");
             if (GetMode() == MOTOR_UNIT_MODE_SECONDARY) {
+                Print("MOTOR_UNIT_MODE_SECONDARY: State to DO_SECONDARY_MODE\r\n");
                 SetStateTo(DO_SECONDARY_MODE);
             } else {
                 err = ERROR_INVALID_MODE;   
@@ -56,6 +59,7 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
             
         case(ID_MOTOR_UNIT_PWM_DIR_SET):
             if (GetMode() == MOTOR_UNIT_MODE_PWM) {
+                Print("MOTOR_UNIT_MODE_PWM: State to DO_PWM_MODE\r\n");
                 SetStateTo(DO_PWM_MODE);
             } else {
                 err = ERROR_INVALID_MODE;   
@@ -108,6 +112,14 @@ void PrintCanPacket(CANPacket packet){
         (packet.id >> 6) & 0xF , packet.id & 0x3F);
     Print(txData);
 }
+
+int SendLimitAlert(uint8 status) {
+    CANPacket can_send;
+    AssembleLimitSwitchAlertPacket(&can_send, DEVICE_GROUP_JETSON, 
+    DEVICE_SERIAL_JETSON, status);
+    return SendCANPacket(&can_send);
+}
+
 
 
 /* [] END OF FILE */

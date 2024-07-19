@@ -14,8 +14,10 @@
 #include "cyapicallbacks.h"
 #include <stdint.h>
         
-#define ON  1
-#define OFF 0
+#define LED_ON  0
+#define LED_OFF 1
+
+#define PWM_MAX 65535
 
 #define TX_DATA_SIZE            (100u)
 
