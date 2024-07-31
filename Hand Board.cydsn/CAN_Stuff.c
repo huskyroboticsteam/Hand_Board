@@ -32,6 +32,8 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
         // Board-specific packets
         case(ID_MOTOR_UNIT_MODE_SEL):
             Print("Package ID: ID_MOTOR_UNIT_MODE_SEL\r\n");
+            Print("Modes not supported in PY2024 Hand Board\r\n");
+            /*
             data = GetModeFromPacket(receivedPacket);
             
             switch (data) {
@@ -45,25 +47,27 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
                     SetModeTo(0xFF);
                     err = ERROR_INVALID_MODE;
             }
+            */
             break;
             
         case(ID_MOTOR_UNIT_PCA_PWM):
             Print("Package ID: ID_MOTOR_UNIT_PCA_PWM\r\n");
-            if (GetMode() == MOTOR_UNIT_MODE_SECONDARY) {
-                Print("MOTOR_UNIT_MODE_SECONDARY: State to DO_SECONDARY_MODE\r\n");
+            // if (GetMode() == MOTOR_UNIT_MODE_SECONDARY) {
+            //    Print("MOTOR_UNIT_MODE_SECONDARY: State to DO_SECONDARY_MODE\r\n");
                 SetStateTo(DO_SECONDARY_MODE);
-            } else {
-                err = ERROR_INVALID_MODE;   
-            }
+            //} else {
+            //    err = ERROR_INVALID_MODE;   
+            //}
             break;
             
         case(ID_MOTOR_UNIT_PWM_DIR_SET):
-            if (GetMode() == MOTOR_UNIT_MODE_PWM) {
-                Print("MOTOR_UNIT_MODE_PWM: State to DO_PWM_MODE\r\n");
+            Print("Package ID: ID_MOTOR_UNIT_PWM_DIR_SET\r\n");
+            //if (GetMode() == MOTOR_UNIT_MODE_PWM) {
+            //    Print("MOTOR_UNIT_MODE_PWM: State to DO_PWM_MODE\r\n");
                 SetStateTo(DO_PWM_MODE);
-            } else {
-                err = ERROR_INVALID_MODE;   
-            }
+            //} else {
+            //    err = ERROR_INVALID_MODE;   
+            //}
             break;
             
         // Common Packets
@@ -102,15 +106,14 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
     return err;
 }
 
-void PrintCanPacket(CANPacket packet){
-    for(int i = 0; i < packet.dlc; i++ ) {
-        sprintf(txData,"Byte%d %x   ", i+1, packet.data[i]);
+void PrintCanPacket(CANPacket* packet){
+    sprintf(txData, "ID %X DLC %X DATA", packet->id, packet->dlc);
+    Print(txData);
+    for(int i = 0; i < packet->dlc; i++ ) {
+        sprintf(txData," %02X", packet->data[i]);
         Print(txData);
     }
-
-    sprintf(txData,"ID:%x %x %x\r\n",packet.id >> 10, 
-        (packet.id >> 6) & 0xF , packet.id & 0x3F);
-    Print(txData);
+    Print("\r\n");
 }
 
 int SendLimitAlert(uint8 status) {

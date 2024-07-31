@@ -27,7 +27,7 @@
 int ReadCAN(CANPacket *receivedPacket);
 int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend);
 int SendLimitAlert(uint8 status);
-void PrintCanPacket(CANPacket packet);
+void PrintCanPacket(CANPacket* packet);
 
 /* [] END OF FILE */
     

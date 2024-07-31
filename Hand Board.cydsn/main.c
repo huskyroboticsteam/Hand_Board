@@ -56,6 +56,7 @@ uint16_t id = 0;
 
 const uint8_t* data;
 
+CY_ISR_PROTO(Period_Reset_Handler);
 CY_ISR(Period_Reset_Handler) {
     CAN_time_LED++;
     ERROR_time_LED++;
@@ -107,20 +108,23 @@ int main(void)
             case(UNINIT):
                 Print("UNINIT: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
+                StopMotorPWM();
                 break;
             case(CHECK_CAN):
                 if (!PollAndReceiveCANPacket(&can_receive)) {
                     Print("CHECK_CAN: CAN Received\r\n");
                     CAN_time_LED = 0;
+                    //LED_CAN_Write(LED_ON);
                     err = ProcessCAN(&can_receive, &can_send);
-                    PrintInt(err);
+                    PrintCanPacket(&can_receive);
                 }
                 
                 break;
             case DO_PWM_MODE:
+                StartMotorPWM();
                 Print("DO_PWM_MODE: Getting PWM from packet\r\n");
                 pwm_set = GetPWMFromPacket(&can_receive);
-                SetMotorPWM(pwm_set);
+                err = SetMotorPWM(pwm_set/32);
                 Print("DO_PWM_MODE: PWM Set\r\n");
                 Print("DO_PWM_MODE: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
@@ -128,8 +132,6 @@ int main(void)
             case DO_SECONDARY_MODE:
                 // mode 1 tasks
                 id = GetPCAID(&can_receive);
-                //on_time = GetUIntPCAOnTimeFromPacket(&can_receive);
-                //off_time = GetUIntPCAOffTimeFromPacket(&can_receive);
                 on_time = (can_receive.data[2] << 8) | can_receive.data[3];
                 off_time = (can_receive.data[4] << 8) | can_receive.data[5];
                 pwm_set = off_time - on_time;
@@ -146,7 +148,7 @@ int main(void)
                     PWM_Laser_WriteCompare(pwm_set);
                 } else if (id == LINEAR_PCA_ID) {
                     Print("DO_SECONDARY_MODE: Linear Actuator PWM Set\r\n");
-                    if (pwm_set > PWM_MAX / 2)
+                    if (pwm_set)
                         PWM_Actuator_WriteCompare(PWM_MAX);
                     else
                         PWM_Actuator_WriteCompare(0);
@@ -195,7 +197,8 @@ void Initialize(void) {
     PWM_Laser_Start();
     PWM_Actuator_Init();
     PWM_Actuator_Start();
-    StartMotorPWM();
+    PWM_Motor_Init();
+    PWM_Motor_Start();
     
     isr_Period_Reset_StartEx(Period_Reset_Handler);
 }
@@ -241,50 +244,5 @@ void DisplayErrorCode(uint8_t code) {
             break;
     }
 }
-
-/*
-static uint32 ReadSwSwitch(void)
-{
-    uint32 heldDown;
-    uint32 sw1Status;
-    uint32 sw2Status;
-
-    sw1Status = 0u;  /* Switch is not active 
-    sw2Status = 0u;  /* Switch is not active 
-    heldDown = 0u;  /* Reset debounce counter 
-
-    /* Wait for debounce period before determining whether the switch is pressed 
-    while (Switch1_Read() == SWITCH_PRESSED)
-    {
-        /* Count debounce period 
-        CyDelay(SWITCH_DEBOUNCE_UNIT);
-        ++heldDown;
-
-        if (heldDown > SWITCH_DEBOUNCE_PERIOD)
-        {
-            sw1Status = 1u; /* Switch is pressed 
-            break;
-        }
-    }
-    
-    while (Switch2_Read() == SWITCH_PRESSED)
-    {
-        /* Count debounce period
-        CyDelay(SWITCH_DEBOUNCE_UNIT);
-        ++heldDown;
-
-        if (heldDown > SWITCH_DEBOUNCE_PERIOD)
-        {
-            sw2Status = 1u; /* Switch is pressed
-            break;
-        }
-    }
-
-    return (sw1Status);
-    return (sw2Status);
-}
-*/
-
-
 
 /* [] END OF FILE */
