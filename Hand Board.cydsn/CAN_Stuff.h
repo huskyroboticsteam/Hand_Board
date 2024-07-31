@@ -22,9 +22,12 @@
 #define ERROR_INVALID_TTC     0x12
 #define ERROR_INVALID_PACKET  0x13
 
+#define ERROR_INVALID_ID      0x14 // added by Michael
+
 int ReadCAN(CANPacket *receivedPacket);
 int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend);
-void PrintCanPacket(CANPacket packet);
+int SendLimitAlert(uint8 status);
+void PrintCanPacket(CANPacket* packet);
 
 /* [] END OF FILE */
     

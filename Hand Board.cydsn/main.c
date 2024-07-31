@@ -20,6 +20,7 @@
 #include "CAN_Stuff.h"
 #include "FSM_Stuff.h"
 #include "HindsightCAN/CANLibrary.h"
+#include "MotorDrive.h"
 
 // LED stuff
 volatile uint8_t CAN_time_LED = 0;
@@ -37,7 +38,7 @@ volatile uint8_t ERROR_time_LED = 0;
 
 
 static uint32 ReadSwSwitch(void);
-CY_ISR_PROTO(ISR_CAN);
+//CY_ISR_PROTO(ISR_CAN);
 
 uint8 switchState = SWITCH_RELEASED;
 
@@ -51,18 +52,20 @@ char txData[TX_DATA_SIZE];
 CANPacket can_receive;
 CANPacket can_send;
 uint8 address = 0;
+uint16_t id = 0;
 
 const uint8_t* data;
 
+CY_ISR_PROTO(Period_Reset_Handler);
 CY_ISR(Period_Reset_Handler) {
     CAN_time_LED++;
     ERROR_time_LED++;
 
     if (ERROR_time_LED >= 3) {
-        LED_ERR_Write(OFF);
+        LED_ERR_Write(LED_OFF);
     }
     if (CAN_time_LED >= 3) {
-        LED_CAN_Write(OFF);
+        LED_CAN_Write(LED_OFF);
     }
 }
 
@@ -70,7 +73,9 @@ CY_ISR(Button_1_Handler) {
     LED_DBG_Write(!LED_DBG_Read());
 }
 
-int32_t pwm_set = 0;
+uint32_t pwm_set = 0;
+uint16_t on_time = 0;
+uint16_t off_time = 0;
 
 int main(void)
 { 
@@ -83,53 +88,75 @@ int main(void)
 
     DBG_UART_Start();
     ADC_Pot_Start();
-    PWM_Motor_Start();
 
     /* Start ADC conversion */
     ADC_Pot_StartConvert();
 
-    CAN_Start();
+    //CAN_Start();
 
     /* Set CAN interrupt handler to local routine */
-    CyIntSetVector(CAN_ISR_NUMBER, ISR_CAN);
-    
-    CyGlobalIntEnable; /* Enable global interrupts. */
+    // CyIntSetVector(CAN_ISR_NUMBER, ISR_CAN);
 
     /* Place your initialization/startup code here (e.g. MyInst_Start()) */
     
+    Print("Start\r\n");
+    
     for(;;)
-    {
-        
+    {   
         err = 0;
         switch(GetState()) {
             case(UNINIT):
+                Print("UNINIT: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
+                StopMotorPWM();
                 break;
             case(CHECK_CAN):
                 if (!PollAndReceiveCANPacket(&can_receive)) {
-                    LED_CAN_Write(ON);
+                    Print("CHECK_CAN: CAN Received\r\n");
                     CAN_time_LED = 0;
+                    //LED_CAN_Write(LED_ON);
                     err = ProcessCAN(&can_receive, &can_send);
+                    PrintCanPacket(&can_receive);
                 }
+                
                 break;
             case DO_PWM_MODE:
+                StartMotorPWM();
+                Print("DO_PWM_MODE: Getting PWM from packet\r\n");
                 pwm_set = GetPWMFromPacket(&can_receive);
-                PWM_Motor_WriteCompare(pwm_set);
+                err = SetMotorPWM(pwm_set/32);
+                Print("DO_PWM_MODE: PWM Set\r\n");
+                Print("DO_PWM_MODE: State to CHECK_CAN\r\n");
+                SetStateTo(CHECK_CAN);
                 break;
-            case DO_LASER_MODE:
+            case DO_SECONDARY_MODE:
                 // mode 1 tasks
-                pwm_set = GetPWMFromPacket(&can_receive);
-                switch (GetLaserIDFromPacket(&can_receive)) {
-                    case 0:
-                        PWM_Laser_A_WriteCompare(pwm_set);
-                        break;
-                    case 1:
-                        PWM_Laser_B_WriteCompare(pwm_set);
-                        break;    
+                id = GetPCAID(&can_receive);
+                on_time = (can_receive.data[2] << 8) | can_receive.data[3];
+                off_time = (can_receive.data[4] << 8) | can_receive.data[5];
+                pwm_set = off_time - on_time;
+                Print("\r\n");
+                PrintInt(on_time);
+                Print("\r\n");
+                PrintInt(off_time);
+                Print("\r\n");
+                PrintInt(pwm_set);
+                Print("\r\n");
+                
+                if (id == LASER_PCA_ID) {
+                    Print("DO_SECONDARY_MODE: Laser PWM Set\r\n");
+                    PWM_Laser_WriteCompare(pwm_set);
+                } else if (id == LINEAR_PCA_ID) {
+                    Print("DO_SECONDARY_MODE: Linear Actuator PWM Set\r\n");
+                    if (pwm_set)
+                        PWM_Actuator_WriteCompare(PWM_MAX);
+                    else
+                        PWM_Actuator_WriteCompare(0);
+                } else {
+                    Print("DO_SECONDARY_MODE: ERROR_INVALID_ID\r\n");
+                    err = ERROR_INVALID_ID;   
                 }
-                
-                DBG_UART_UartPutString("PWM Set");
-                
+                Print("DO_SECONDARY_MODE: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 break;
             default:
@@ -144,93 +171,6 @@ int main(void)
             DebugPrint(DBG_UART_UartGetByte());
         }
         
-        CyDelay(100);
-        
-        
-        /* Place your application code here. */
-        if (ADC_Pot_IsEndConversion(ADC_Pot_RETURN_STATUS))
-        {
-            /* Gets ADC conversion result */
-            output = ADC_Pot_GetResult16(ADC_CHANNEL_NUMBER_0);
-
-            /* Saturates ADC result to positive numbers */
-            if (output < 0)
-            {
-                output = 0;
-            }
-            
-            /* Converts ADC result to milli volts */
-            resMilliVolts = (uint16) ADC_Pot_CountsTo_mVolts(ADC_CHANNEL_NUMBER_0, output);
-            
-            /*
-            Unclear what commented code is for.
-            */  
-            /*
-            // Sends value of ADC output via CAN
-            CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_ADCdata, HI8(resMilliVolts));
-            CAN_TX_DATA_BYTE2(CAN_TX_MAILBOX_ADCdata, LO8(resMilliVolts));
-            CAN_TX_DATA_BYTE3(CAN_TX_MAILBOX_ADCdata, 0u);
-            CAN_TX_DATA_BYTE4(CAN_TX_MAILBOX_ADCdata, 0u);
-            CAN_TX_DATA_BYTE5(CAN_TX_MAILBOX_ADCdata, 0u);
-            CAN_TX_DATA_BYTE6(CAN_TX_MAILBOX_ADCdata, 0u);
-            CAN_TX_DATA_BYTE7(CAN_TX_MAILBOX_ADCdata, 0u);
-            CAN_TX_DATA_BYTE8(CAN_TX_MAILBOX_ADCdata, 0u);
-            CAN_SendMsgADCdata();
-
-            // Display value of ADC output on LCD
-            sprintf(txData, "ADC out: %u.%.3u \r\n", (resMilliVolts / 1000u), (resMilliVolts % 1000u));
-            DBG_UART_UartPutString(txData);
-            */
-        }
-
-        /*
-            Unclear what commented code is for.
-        */
-        /*
-        // Change configuration at switch press or release event 
-        if (switchState != ReadSwSwitch())    // Switch state changed status
-        {
-            // Store the current switch state
-            switchState = ReadSwSwitch();
-
-            // Fill CAN data depending on switch state
-            if (Switch1_Read() == 0u)
-            {
-                CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_switchStatus, SWITCH_PRESSED);
-                DBG_UART_UartPutString("switch1 pressed.\r\n");
-            }
-            else
-            {
-                CAN_TX_DATA_BYTE1(CAN_TX_MAILBOX_switchStatus, SWITCH_RELEASED);
-                DBG_UART_UartPutString("switch1 released.\r\n");
-            }
-            CAN_TX_DATA_BYTE2(CAN_TX_MAILBOX_switchStatus, 0u);
-            CAN_TX_DATA_BYTE3(CAN_TX_MAILBOX_switchStatus, 0u);
-            CAN_TX_DATA_BYTE4(CAN_TX_MAILBOX_switchStatus, 0u);
-            CAN_TX_DATA_BYTE5(CAN_TX_MAILBOX_switchStatus, 0u);
-            CAN_TX_DATA_BYTE6(CAN_TX_MAILBOX_switchStatus, 0u);
-            CAN_TX_DATA_BYTE7(CAN_TX_MAILBOX_switchStatus, 0u);
-            CAN_TX_DATA_BYTE8(CAN_TX_MAILBOX_switchStatus, 0u);
-
-            // Send CAN message with switch state
-            CAN_SendMsgswitchStatus();
-        }
-        
-        if (isrFlag != 0u)
-        {
-            // Set PWM pulse width
-            PWM_WriteCompare(CAN_RX_DATA_BYTE1(CAN_RX_MAILBOX_0));
-
-            // Puts out over UART value of PWM pulse width
-            sprintf(txData, "PWM pulse width: %X \r\n", CAN_RX_DATA_BYTE1(CAN_RX_MAILBOX_0));
-            DBG_UART_UartPutString(txData);
-            
-            // Clear the isrFlag
-            isrFlag = 0u;
-        }
-        */
-
-        CyDelay(100u);
     }
 }
 
@@ -243,13 +183,21 @@ void Initialize(void) {
     sprintf(txData, "Dip Addr: %x \r\n", address);
     Print(txData);
     
-    LED_DBG_Write(0);
+    LED_DBG_Write(LED_OFF);
+    LED_CAN_Write(LED_OFF);
+    LED_ERR_Write(LED_OFF);
     
     InitCAN(0x4, (int)address);
     Timer_Period_Reset_Start();
     
-    PWM_Laser_A_Start();
-    PWM_Laser_B_Start();
+    sprintf(txData, "DG: %x\r\nSerialAddress: %d\r\n", 0x4, address);
+    Print(txData);
+    
+    PWM_Laser_Init();
+    PWM_Laser_Start();
+    PWM_Actuator_Init();
+    PWM_Actuator_Start();
+    PWM_Motor_Init();
     PWM_Motor_Start();
     
     isr_Period_Reset_StartEx(Period_Reset_Handler);
@@ -273,20 +221,15 @@ void DebugPrint(char input) {
 int getSerialAddress() {
     int address = 0;
     
-    if (DIP1_Read()==0) address += 1;
-    if (DIP2_Read()==0) address += 2;
-    if (DIP3_Read()==0) address += 4;
-    if (DIP4_Read()==0) address += 8;
-    
     if (address == 0)
-        address = DEVICE_SERIAL_TELEM_LOCALIZATION;
+        address = DEVICE_SERIAL_MOTOR_HAND;
 
     return address;
 }
 
 void DisplayErrorCode(uint8_t code) {    
     ERROR_time_LED = 0;
-    LED_ERR_Write(ON);
+    LED_ERR_Write(LED_ON);
     
     sprintf(txData, "Error %X\r\n", code);
     Print(txData);
@@ -301,58 +244,5 @@ void DisplayErrorCode(uint8_t code) {
             break;
     }
 }
-CY_ISR(ISR_CAN)
-{
-    /* Clear Receive Message flag */
-    CAN_INT_SR_REG = CAN_RX_MESSAGE_MASK;
-
-    /* Set the isrFlag */
-    isrFlag = 1u;
-
-    /* Acknowledges receipt of new message */
-    CAN_RX_ACK_MESSAGE(CAN_RX_MAILBOX_0);
-}
-static uint32 ReadSwSwitch(void)
-{
-    uint32 heldDown;
-    uint32 sw1Status;
-    uint32 sw2Status;
-
-    sw1Status = 0u;  /* Switch is not active */
-    sw2Status = 0u;  /* Switch is not active */
-    heldDown = 0u;  /* Reset debounce counter */
-
-    /* Wait for debounce period before determining whether the switch is pressed */
-    while (Switch1_Read() == SWITCH_PRESSED)
-    {
-        /* Count debounce period */
-        CyDelay(SWITCH_DEBOUNCE_UNIT);
-        ++heldDown;
-
-        if (heldDown > SWITCH_DEBOUNCE_PERIOD)
-        {
-            sw1Status = 1u; /* Switch is pressed */
-            break;
-        }
-    }
-    
-    while (Switch2_Read() == SWITCH_PRESSED)
-    {
-        /* Count debounce period */
-        CyDelay(SWITCH_DEBOUNCE_UNIT);
-        ++heldDown;
-
-        if (heldDown > SWITCH_DEBOUNCE_PERIOD)
-        {
-            sw2Status = 1u; /* Switch is pressed */
-            break;
-        }
-    }
-
-    return (sw1Status);
-    return (sw2Status);
-}
-
-
 
 /* [] END OF FILE */
