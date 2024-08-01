@@ -18,11 +18,14 @@
 #include <stdlib.h>
 #include "MotorDrive.h"
 #include "CAN_Stuff.h"
+#include "FSM_Stuff.h"
+#include "main.h"
 
 int16 min_pwm = 20;
 int32 PWM_value = 0;
 
-volatile uint8  PWM_invalidate = 0;
+volatile uint16 PWM_invalidate = 0;
+volatile uint16 LinAck_Time = 0;
 
 Conversion conv = {};
 
@@ -104,24 +107,35 @@ int32 GetCurrentPWM() { return PWM_value; }
 uint8 GetLimitStatus() { return limit1 | (limit2 << 1); }  
 
 CY_ISR(Drive_Handler) {
-    if (Limit_1_Read() == 0) {
-        if (limit1 == 0) {
-            SetMotorPWM(0);
-            SendLimitAlert(1);
-        }
-        limit1 = 1;
-    } else limit1 = 0;
-    
-    if (Limit_2_Read() == 0) {
-        if (limit2 == 0) {
-            SetMotorPWM(0);
-            SendLimitAlert(2);
-        }
-        limit2 = 1;
-    } else limit2 = 0;
-    
-    if (PWM_invalidate == 20) SetMotorPWM(0);
-    else PWM_invalidate++;
+    if (GetState() != UNINIT) {
+        if (Limit_1_Read() > 0) {
+            if (limit1 == 0) {
+                SetMotorPWM(0);
+                SendLimitAlert(1);
+            }
+            limit1 = 1;
+        } else limit1 = 0;
+        
+        if (Limit_2_Read() > 0) {
+            if (limit2 == 0) {
+                SetMotorPWM(0);
+                SendLimitAlert(2);
+            }
+            limit2 = 1;
+        } else limit2 = 0;
+        
+        if (PWM_invalidate == 20) SetMotorPWM(0);
+        else PWM_invalidate++;
+        
+        if (LinAck_Time == 20) {
+            LED_DBG_Write(LED_OFF);
+            PWM_Actuator_WriteCompare(0);
+        } else LinAck_Time++;
+    }
+}
+
+void reset_linAckTime() {
+    LinAck_Time = 0;   
 }
 
 /* [] END OF FILE */

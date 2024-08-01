@@ -38,12 +38,10 @@ volatile uint8_t ERROR_time_LED = 0;
 
 
 static uint32 ReadSwSwitch(void);
-//CY_ISR_PROTO(ISR_CAN);
 
 uint8 switchState = SWITCH_RELEASED;
 
 volatile uint8 isrFlag = 0u;
-
 
 // UART stuff
 char txData[TX_DATA_SIZE];
@@ -74,8 +72,6 @@ CY_ISR(Button_1_Handler) {
 }
 
 uint32_t pwm_set = 0;
-uint16_t on_time = 0;
-uint16_t off_time = 0;
 
 int main(void)
 { 
@@ -91,13 +87,6 @@ int main(void)
 
     /* Start ADC conversion */
     ADC_Pot_StartConvert();
-
-    //CAN_Start();
-
-    /* Set CAN interrupt handler to local routine */
-    // CyIntSetVector(CAN_ISR_NUMBER, ISR_CAN);
-
-    /* Place your initialization/startup code here (e.g. MyInst_Start()) */
     
     Print("Start\r\n");
     
@@ -109,6 +98,9 @@ int main(void)
                 Print("UNINIT: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 StopMotorPWM();
+                Timer_Period_Reset_Sleep();
+                PWM_Laser_Sleep();
+                PWM_Actuator_Sleep();
                 break;
             case(CHECK_CAN):
                 if (!PollAndReceiveCANPacket(&can_receive)) {
@@ -122,6 +114,7 @@ int main(void)
                 break;
             case DO_PWM_MODE:
                 StartMotorPWM();
+                Timer_Period_Reset_Wakeup();
                 Print("DO_PWM_MODE: Getting PWM from packet\r\n");
                 pwm_set = GetPWMFromPacket(&can_receive);
                 err = SetMotorPWM(pwm_set/32);
@@ -129,34 +122,31 @@ int main(void)
                 Print("DO_PWM_MODE: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 break;
-            case DO_SECONDARY_MODE:
-                // mode 1 tasks
-                id = GetPCAID(&can_receive);
-                on_time = (can_receive.data[2] << 8) | can_receive.data[3];
-                off_time = (can_receive.data[4] << 8) | can_receive.data[5];
-                pwm_set = off_time - on_time;
-                Print("\r\n");
-                PrintInt(on_time);
-                Print("\r\n");
-                PrintInt(off_time);
-                Print("\r\n");
-                PrintInt(pwm_set);
-                Print("\r\n");
+            case DO_SECONDARY_HAND_MODE:
+                Timer_Period_Reset_Wakeup();
+                PWM_Laser_Wakeup();
+                PWM_Actuator_Wakeup();
+                id = GetPeripheralID(&can_receive);
+                pwm_set = GetPeripheralData(&can_receive);
                 
-                if (id == LASER_PCA_ID) {
-                    Print("DO_SECONDARY_MODE: Laser PWM Set\r\n");
+                if (id == LASER_PERIPH_ID) {
+                    Print("DO_SECONDARY_HAND_MODE: Laser PWM Set\r\n");
                     PWM_Laser_WriteCompare(pwm_set);
-                } else if (id == LINEAR_PCA_ID) {
-                    Print("DO_SECONDARY_MODE: Linear Actuator PWM Set\r\n");
-                    if (pwm_set)
+                } else if (id == LINEAR_PERIPH_ID) {
+                    Print("DO_SECONDARY_HAND_MODE: Linear Actuator PWM Set\r\n");
+                    reset_linAckTime();
+                    if (pwm_set) {
+                        LED_DBG_Write(LED_ON);
                         PWM_Actuator_WriteCompare(PWM_MAX);
-                    else
+                    } else {
+                        LED_DBG_Write(LED_OFF);
                         PWM_Actuator_WriteCompare(0);
+                    }
                 } else {
-                    Print("DO_SECONDARY_MODE: ERROR_INVALID_ID\r\n");
+                    Print("DO_SECONDARY_HAND_MODE: ERROR_INVALID_ID\r\n");
                     err = ERROR_INVALID_ID;   
                 }
-                Print("DO_SECONDARY_MODE: State to CHECK_CAN\r\n");
+                Print("DO_SECONDARY_HAND_MODE: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 break;
             default:
@@ -170,7 +160,6 @@ int main(void)
         if (DBG_UART_SpiUartGetRxBufferSize()) {
             DebugPrint(DBG_UART_UartGetByte());
         }
-        
     }
 }
 
@@ -188,7 +177,6 @@ void Initialize(void) {
     LED_ERR_Write(LED_OFF);
     
     InitCAN(0x4, (int)address);
-    Timer_Period_Reset_Start();
     
     sprintf(txData, "DG: %x\r\nSerialAddress: %d\r\n", 0x4, address);
     Print(txData);
@@ -200,7 +188,10 @@ void Initialize(void) {
     PWM_Motor_Init();
     PWM_Motor_Start();
     
+    Timer_Period_Reset_Start();
+     
     isr_Period_Reset_StartEx(Period_Reset_Handler);
+    isr_Drive_StartEx(Drive_Handler);
 }
 
 void DebugPrint(char input) {

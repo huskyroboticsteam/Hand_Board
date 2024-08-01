@@ -33,41 +33,16 @@ int ProcessCAN(CANPacket* receivedPacket, CANPacket* packetToSend) {
         case(ID_MOTOR_UNIT_MODE_SEL):
             Print("Package ID: ID_MOTOR_UNIT_MODE_SEL\r\n");
             Print("Modes not supported in PY2024 Hand Board\r\n");
-            /*
-            data = GetModeFromPacket(receivedPacket);
-            
-            switch (data) {
-                case MOTOR_UNIT_MODE_PWM:
-                    SetModeTo(MOTOR_UNIT_MODE_PWM);
-                    break;
-                case MOTOR_UNIT_MODE_SECONDARY:
-                    SetModeTo(MOTOR_UNIT_MODE_SECONDARY);
-                    break;
-                default:
-                    SetModeTo(0xFF);
-                    err = ERROR_INVALID_MODE;
-            }
-            */
             break;
             
-        case(ID_MOTOR_UNIT_PCA_PWM):
-            Print("Package ID: ID_MOTOR_UNIT_PCA_PWM\r\n");
-            // if (GetMode() == MOTOR_UNIT_MODE_SECONDARY) {
-            //    Print("MOTOR_UNIT_MODE_SECONDARY: State to DO_SECONDARY_MODE\r\n");
-                SetStateTo(DO_SECONDARY_MODE);
-            //} else {
-            //    err = ERROR_INVALID_MODE;   
-            //}
+        case(ID_MOTOR_UNIT_SET_PERIPHERALS):
+            Print("Package ID: ID_MOTOR_UNIT_SET_PERIPHERALS\r\n");
+            SetStateTo(DO_SECONDARY_HAND_MODE);
             break;
             
         case(ID_MOTOR_UNIT_PWM_DIR_SET):
             Print("Package ID: ID_MOTOR_UNIT_PWM_DIR_SET\r\n");
-            //if (GetMode() == MOTOR_UNIT_MODE_PWM) {
-            //    Print("MOTOR_UNIT_MODE_PWM: State to DO_PWM_MODE\r\n");
-                SetStateTo(DO_PWM_MODE);
-            //} else {
-            //    err = ERROR_INVALID_MODE;   
-            //}
+            SetStateTo(DO_PWM_MODE);
             break;
             
         // Common Packets

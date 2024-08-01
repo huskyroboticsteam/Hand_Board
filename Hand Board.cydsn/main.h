@@ -12,6 +12,7 @@
 #pragma once
    
 #include "cyapicallbacks.h"
+#include <project.h>
 #include <stdint.h>
         
 #define LED_ON  0
@@ -30,6 +31,5 @@ void Initialize(void);
 int getSerialAddress();
 void DebugPrint(char input);
 void DisplayErrorCode(uint8_t code);
-
 
 /* [] END OF FILE */

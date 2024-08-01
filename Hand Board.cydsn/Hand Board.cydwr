@@ -3839,8 +3839,8 @@
         <Data key="operation_mode" value="1" />
         <Data key="plus_tolerance" value="0" />
         <Data key="scope" value="BUILTIN" />
-        <Data key="sourceClk_minus_acuracy_name" value="0" />
-        <Data key="sourceClk_plus_acuracy_name" value="0" />
+        <Data key="sourceClk_minus_acuracy_name" value="60" />
+        <Data key="sourceClk_plus_acuracy_name" value="60" />
         <Data key="src_clk_id" value="9A908CA6-5BB3-4db0-B098-959E5D90882B" />
         <Data key="src_clk_name" value="LFClk" />
         <Data key="start_on_reset" value="False" />
@@ -3958,11 +3958,6 @@
         <Data key="Port Format" value="3,4" />
       </Group>
     </Group>
-    <Group key="34b46a33-3f12-49ff-973e-3a0b49db20d2">
-      <Group key="0">
-        <Data key="Port Format" value="2,2" />
-      </Group>
-    </Group>
     <Group key="43ec2fa1-bf22-4b71-9477-b6ca7b97f0b0/23b8206d-1c77-4e61-be4a-b4037d5de5fc">
       <Group key="0">
         <Data key="Port Format" value="2,1" />
@@ -3996,11 +3991,6 @@
     <Group key="32293a45-e7c6-4687-8ad9-5915bec75bae">
       <Group key="0">
         <Data key="Port Format" value="0,3" />
-      </Group>
-    </Group>
-    <Group key="65779c1d-38ce-46d2-a5e9-5356d1a61c44">
-      <Group key="0">
-        <Data key="Port Format" value="2,1" />
       </Group>
     </Group>
     <Group key="750939a5-8f60-4c5f-9d51-680523087060">
@@ -4096,7 +4086,22 @@
         <Data key="0" value="133540791171503843" />
       </Group>
     </Group>
-    <Group key="Unlocked Pins" />
+    <Group key="Unlocked Pins">
+      <Group key="34b46a33-3f12-49ff-973e-3a0b49db20d2">
+        <Group key="0">
+          <Group key="133668692502078105">
+            <Data key="Port Format" value="2,2" />
+          </Group>
+        </Group>
+      </Group>
+      <Group key="65779c1d-38ce-46d2-a5e9-5356d1a61c44">
+        <Group key="0">
+          <Group key="133668692508174006">
+            <Data key="Port Format" value="2,1" />
+          </Group>
+        </Group>
+      </Group>
+    </Group>
   </Group>
   <Group key="PlaceDir">
     <Data key="count" value="0" />

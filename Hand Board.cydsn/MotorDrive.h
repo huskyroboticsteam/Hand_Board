@@ -46,6 +46,9 @@ uint8 GetLimitStatus();
 int32 GetCurrentMotorPWM();
 void SetEncBound(uint8 lim_num, int32 value);
 
+void reset_linAckTime();
+
+CY_ISR_PROTO(Drive_Handler);
 CY_ISR(Limit_Handler);
 CY_ISR(Drive_Handler);
 
