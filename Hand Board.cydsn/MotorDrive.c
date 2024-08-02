@@ -25,7 +25,6 @@ int16 min_pwm = 20;
 int32 PWM_value = 0;
 
 volatile uint16 PWM_invalidate = 0;
-volatile uint16 LinAck_Time = 0;
 
 Conversion conv = {};
 
@@ -126,16 +125,7 @@ CY_ISR(Drive_Handler) {
         
         if (PWM_invalidate == 20) SetMotorPWM(0);
         else PWM_invalidate++;
-        
-        if (LinAck_Time == 20) {
-            LED_DBG_Write(LED_OFF);
-            PWM_Actuator_WriteCompare(0);
-        } else LinAck_Time++;
     }
-}
-
-void reset_linAckTime() {
-    LinAck_Time = 0;   
 }
 
 /* [] END OF FILE */

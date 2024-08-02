@@ -123,7 +123,6 @@ int main(void)
                 SetStateTo(CHECK_CAN);
                 break;
             case DO_SECONDARY_HAND_MODE:
-                Timer_Period_Reset_Wakeup();
                 PWM_Laser_Wakeup();
                 PWM_Actuator_Wakeup();
                 id = GetPeripheralID(&can_receive);
@@ -134,14 +133,10 @@ int main(void)
                     PWM_Laser_WriteCompare(pwm_set);
                 } else if (id == LINEAR_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Linear Actuator PWM Set\r\n");
-                    reset_linAckTime();
-                    if (pwm_set) {
-                        LED_DBG_Write(LED_ON);
+                    if (pwm_set)
                         PWM_Actuator_WriteCompare(PWM_MAX);
-                    } else {
-                        LED_DBG_Write(LED_OFF);
+                    else
                         PWM_Actuator_WriteCompare(0);
-                    }
                 } else {
                     Print("DO_SECONDARY_HAND_MODE: ERROR_INVALID_ID\r\n");
                     err = ERROR_INVALID_ID;   
