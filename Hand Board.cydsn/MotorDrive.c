@@ -39,6 +39,7 @@ int StartMotorPWM() {
 
 void StopMotorPWM() {
     PWM_Motor_WriteCompare(0);
+    Pin_Motor_Dir_Write(0);
 }
 
 // Sends PWM and Direction to the motor driver
@@ -50,11 +51,13 @@ int SetMotorPWM(int16 pwm) {
     PWM_invalidate = 0;
     
     if (pwm < 0) {
+        Pin_Motor_Dir_Write(BACKWARD);
         if (limit1) {
             err = ERROR_LIMIT;
             pwm = 0;
         }
     } else if (pwm > 0) {
+        Pin_Motor_Dir_Write(FORWARD);
         if (limit2) {
             err = ERROR_LIMIT;
             pwm = 0;

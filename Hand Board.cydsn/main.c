@@ -98,7 +98,6 @@ int main(void)
                 Print("UNINIT: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 StopMotorPWM();
-                Timer_Period_Reset_Sleep();
                 PWM_Laser_Sleep();
                 PWM_Actuator_Sleep();
                 break;
@@ -114,7 +113,6 @@ int main(void)
                 break;
             case DO_PWM_MODE:
                 StartMotorPWM();
-                Timer_Period_Reset_Wakeup();
                 Print("DO_PWM_MODE: Getting PWM from packet\r\n");
                 pwm_set = GetPWMFromPacket(&can_receive);
                 err = SetMotorPWM(pwm_set/32);
