@@ -98,8 +98,8 @@ int main(void)
                 Print("UNINIT: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 StopMotorPWM();
-                PWM_Laser_Sleep();
-                PWM_Actuator_Sleep();
+                PWM_Laser1_Sleep();
+                PWM_Laser2_Sleep();
                 break;
             case(CHECK_CAN):
                 if (!PollAndReceiveCANPacket(&can_receive)) {
@@ -121,20 +121,21 @@ int main(void)
                 SetStateTo(CHECK_CAN);
                 break;
             case DO_SECONDARY_HAND_MODE:
-                PWM_Laser_Wakeup();
-                PWM_Actuator_Wakeup();
+                PWM_Laser1_Wakeup();
+                PWM_Laser2_Wakeup();
                 id = GetPeripheralID(&can_receive);
                 pwm_set = GetPeripheralData(&can_receive);
                 
                 if (id == LASER_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Laser PWM Set\r\n");
-                    PWM_Laser_WriteCompare(pwm_set);
+                    PWM_Laser1_WriteCompare(pwm_set);
+                    PWM_Laser1_WriteCompare(pwm_set);
                 } else if (id == LINEAR_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Linear Actuator PWM Set\r\n");
-                    if (pwm_set)
-                        PWM_Actuator_WriteCompare(PWM_MAX);
-                    else
-                        PWM_Actuator_WriteCompare(0);
+                    //if (pwm_set)
+                       // PWM_Actuator_WriteCompare(PWM_MAX);   Add function for actuator control + direction
+                    //else
+                        // PWM_Actuator_WriteCompare(0); Add function for actuator control + direction
                 } else {
                     Print("DO_SECONDARY_HAND_MODE: ERROR_INVALID_ID\r\n");
                     err = ERROR_INVALID_ID;   
@@ -174,10 +175,10 @@ void Initialize(void) {
     sprintf(txData, "DG: %x\r\nSerialAddress: %d\r\n", 0x4, address);
     Print(txData);
     
-    PWM_Laser_Init();
-    PWM_Laser_Start();
-    PWM_Actuator_Init();
-    PWM_Actuator_Start();
+    PWM_Laser1_Init();
+    PWM_Laser1_Start();
+    PWM_Laser2_Init();
+    PWM_Laser2_Start();
     PWM_Motor_Init();
     PWM_Motor_Start();
     
