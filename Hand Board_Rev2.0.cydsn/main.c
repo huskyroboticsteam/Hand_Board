@@ -71,7 +71,7 @@ CY_ISR(Button_1_Handler) {
     LED_DBG_Write(!LED_DBG_Read());
 }
 
-uint32_t pwm_set = 0;
+int16_t pwm_set = 0;
 
 int main(void)
 { 
@@ -132,10 +132,7 @@ int main(void)
                     PWM_Laser1_WriteCompare(pwm_set);
                 } else if (id == LINEAR_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Linear Actuator PWM Set\r\n");
-                    //if (pwm_set)
-                       // PWM_Actuator_WriteCompare(PWM_MAX);   Add function for actuator control + direction
-                    //else
-                        // PWM_Actuator_WriteCompare(0); Add function for actuator control + direction
+                     driveActuator(pwm_set);
                 } else {
                     Print("DO_SECONDARY_HAND_MODE: ERROR_INVALID_ID\r\n");
                     err = ERROR_INVALID_ID;   
