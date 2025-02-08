@@ -21,6 +21,7 @@
 #include "FSM_Stuff.h"
 #include "HindsightCAN/CANLibrary.h"
 #include "MotorDrive.h"
+#include "ActuatorDrive.h"
 
 // LED stuff
 volatile uint8_t CAN_time_LED = 0;

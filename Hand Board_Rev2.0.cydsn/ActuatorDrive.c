@@ -27,7 +27,7 @@ void driveActuator(int16_t pwm) {
         setDriveMode(REVERSE);
     }
     else if (pwm > 0) {
-        setDriveMode(FORWARD);
+        setDriveMode(FORWARDS);
     }
 }
 
@@ -46,7 +46,7 @@ void setDriveMode(driveMode mode) {
             Pin_Actuator_I1_Write(LOW);
             Pin_Actuator_I2_Write(HIGH);
             break;
-        case FORWARD:
+        case FORWARDS:
             Pin_Actuator_I1_Write(HIGH);
             Pin_Actuator_I2_Write(LOW);
             break;

@@ -18,7 +18,7 @@
 typedef enum driveMode {
     COAST,
     REVERSE,
-    FORWARD,
+    FORWARDS,
     BRAKE
     
 } driveMode;
