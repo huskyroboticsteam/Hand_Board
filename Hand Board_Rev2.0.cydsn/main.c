@@ -130,7 +130,7 @@ int main(void)
                 if (id == LASER_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Laser PWM Set\r\n");
                     PWM_Laser1_WriteCompare(pwm_set);
-                    PWM_Laser1_WriteCompare(pwm_set);
+                    PWM_Laser2_WriteCompare(pwm_set);
                 } else if (id == LINEAR_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Linear Actuator PWM Set\r\n");
                      driveActuator(pwm_set);
