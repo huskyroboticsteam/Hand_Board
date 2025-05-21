@@ -170,7 +170,7 @@ void Initialize(void) {
     
     InitCAN(0x4, (int)address);
     
-    sprintf(txData, "DG: %x\r\nSerialAddress: %d\r\n", 0x4, address);
+    sprintf(txData, "Updated FW: DG: %x\r\nSerialAddress: %d\r\n", 0x4, address);
     Print(txData);
     
     PWM_Laser1_Init();
@@ -193,6 +193,20 @@ void DebugPrint(char input) {
             break;
         case 'x':
             sprintf(txData, "bruh\r\n");
+            break;
+        case 'l':
+            sprintf(txData, "Laser on max \r\n");
+            PWM_Laser1_WriteCompare(0);
+            PWM_Laser2_WriteCompare(0);
+            Pin_Laser1_Write(0);
+            Pin_Laser2_Write(0);
+            break;
+        case 'o':
+            sprintf(txData, "Laser off \r\n");
+            PWM_Laser1_WriteCompare(PWM_MAX);
+            PWM_Laser2_WriteCompare(PWM_MAX);
+            Pin_Laser1_Write(1);
+            Pin_Laser2_Write(1);
             break;
         default:
             sprintf(txData, "what\r\n");
