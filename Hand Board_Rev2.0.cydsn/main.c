@@ -101,6 +101,7 @@ int main(void)
                 StopMotorPWM();
                 PWM_Laser1_Sleep();
                 PWM_Laser2_Sleep();
+                stopActuator();
                 break;
             case(CHECK_CAN):
                 if (!PollAndReceiveCANPacket(&can_receive)) {
@@ -118,6 +119,8 @@ int main(void)
                 pwm_set = GetPWMFromPacket(&can_receive);
                 err = SetMotorPWM(pwm_set/32);
                 Print("DO_PWM_MODE: PWM Set\r\n");
+                sprintf(txData,"PWM: %d \r\n", pwm_set);
+                Print(txData);
                 Print("DO_PWM_MODE: State to CHECK_CAN\r\n");
                 SetStateTo(CHECK_CAN);
                 break;
@@ -129,8 +132,9 @@ int main(void)
                 
                 if (id == LASER_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Laser PWM Set\r\n");
-                    PWM_Laser1_WriteCompare(pwm_set);
-                    PWM_Laser2_WriteCompare(pwm_set);
+                    uint8_t level = pwm_set ? 1:0;
+                    Pin_Laser1_Write(level);
+                    Pin_Laser2_Write(level);
                 } else if (id == LINEAR_PERIPH_ID) {
                     Print("DO_SECONDARY_HAND_MODE: Linear Actuator PWM Set\r\n");
                      driveActuator(pwm_set);
@@ -203,10 +207,21 @@ void DebugPrint(char input) {
             break;
         case 'o':
             sprintf(txData, "Laser off \r\n");
-            PWM_Laser1_WriteCompare(PWM_MAX);
-            PWM_Laser2_WriteCompare(PWM_MAX);
             Pin_Laser1_Write(1);
             Pin_Laser2_Write(1);
+            break;
+            
+        case 'm':
+            Print("Running motor \r\n");
+            SetMotorPWM(0x0FFFF);
+            break;
+        
+        case 's':
+            Print("Stopping motor \r\n");
+            SetMotorPWM(0x0000);
+            break;
+        case 'r':
+            sprintf(txData, "Current motor pwm: %lu",PWM_Motor_ReadCompare());
             break;
         default:
             sprintf(txData, "what\r\n");

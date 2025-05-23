@@ -20,6 +20,7 @@
 
 #define ERROR_PWM_NOT_ENABLED 0x30
 #define ERROR_LIMIT 0x31
+#define Print(message) DBG_UART_UartPutString(message)
 
 typedef struct conversion {
     uint8 min_set, max_set, ratio_set;

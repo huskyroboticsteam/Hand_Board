@@ -174,20 +174,24 @@ CY_ISR(Drive_Handler) {
         if (limit1 == 0) {
             SetMotorPWM(0);
             SendLimitAlert(1);
+            Print("Limit 1 alert!");
         //    if (bound_set1) SetEncOffset(enc_lim_1);
         }
         limit1 = 1;
     } else limit1 = 0;
     
+    // Only one lim switch currently enabled for hand
+    /*
     if (Limit_2_Read() == 0) {
         if (limit2 == 0) {
             SetMotorPWM(0);
             SendLimitAlert(2);
+            Print("Limit 2 alert!");
         //    if (bound_set2) SetEncOffset(enc_lim_2);
         }
         limit2 = 1;
     } else limit2 = 0;
-    
+    */
     if (PWM_invalidate == 20) SetMotorPWM(0);
     else PWM_invalidate++;
     

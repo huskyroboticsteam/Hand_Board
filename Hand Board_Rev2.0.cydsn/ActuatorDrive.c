@@ -22,16 +22,19 @@
 void driveActuator(int16_t pwm) {
     if(abs(pwm) < MIN_PWM) {
         setDriveMode(COAST);
+        Print("Drive mode: coast");
     }
     else if(pwm < 0) {
         setDriveMode(REVERSE);
+        Print("Drive mode: reverse");
     }
     else if (pwm > 0) {
         setDriveMode(FORWARDS);
+        Print("Drive mode: forward");
     }
 }
 
-void StopActuator() {
+void stopActuator() {
    setDriveMode(BRAKE);
 }
 
