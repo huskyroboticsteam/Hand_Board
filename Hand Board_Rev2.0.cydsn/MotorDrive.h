@@ -15,8 +15,8 @@
 #include <project.h>
 #include <stdint.h>
 
-#define FORWARD 1
-#define BACKWARD 0
+#define CLOSE 1
+#define OPEN 0
 
 #define ERROR_PWM_NOT_ENABLED 0x30
 #define ERROR_LIMIT 0x31

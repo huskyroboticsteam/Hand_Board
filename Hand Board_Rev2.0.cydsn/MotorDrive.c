@@ -60,14 +60,14 @@ int SetMotorPWM(int16 pwm) {
         PWM_invalidate = 0;
         
         if (pwm < 0) {
-            Pin_Motor_Dir_Write(BACKWARD);
-            if (limit1) {
-                err = ERROR_LIMIT;
-                pwm = 0;
-            }
+            Pin_Motor_Dir_Write(CLOSE);
+            //if (limit1) {
+            //    err = ERROR_LIMIT;
+            //    pwm = 0;
+            //}
         } else if (pwm > 0) {
-            Pin_Motor_Dir_Write(FORWARD);
-            if (limit2) {
+            Pin_Motor_Dir_Write(OPEN);
+            if (limit1) {
                 err = ERROR_LIMIT;
                 pwm = 0;
             }
