@@ -1,3 +1,6 @@
 [submodule "Hand Board.cydsn/HindsightCAN"]
 	path = Hand Board.cydsn/HindsightCAN
-	url = https://github.com/huskyroboticsteam/HindsightCAN.git
+	url = git@github.com:huskyroboticsteam/HindsightCAN.git
+[submodule "Hand Board_Rev2.0.cydsn/HindsightCAN"]
+	path = Hand Board_Rev2.0.cydsn/HindsightCAN
+	url = git@github.com:huskyroboticsteam/HindsightCAN.git
